@@ -6,7 +6,7 @@ import 'package:http/http.dart' as http;
 
 Future getSnapToRoads(List<LatLng> points) async {
   String url = 'https://roads.googleapis.com/v1/snapToRoads?path=';
-  String yourApiKey = 'AIzaSyDLYCobbK3iETuVT0tMgj_bEiYygRZN2rQ';
+  String yourApiKey = '';
 
   for (int i = 0; i < points.length; i++) {
     url += '${points[i].latitude},${points[i].longitude}|';

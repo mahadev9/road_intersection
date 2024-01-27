@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
@@ -22,11 +23,17 @@ class _MyAppState extends State<MyApp> {
   Set<Polyline> _routes = {};
   Set<Marker> _markers = {};
   bool _isLoading = true;
+  Timer? timerLiveLocation, timerRoute;
 
   @override
   void initState() {
     super.initState();
     getLocation();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
   }
 
   getLocation() async {
