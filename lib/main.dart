@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:road_intersection/src/maps_routes.dart';
 import 'package:road_intersection/src/snap_to_roads.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -26,8 +25,6 @@ class _MyAppState extends State<MyApp> {
   Set<Marker> _markers = {};
   bool _isLoading = true;
   late StreamSubscription<Position> _positionStream;
-  late StreamSubscription<List> _lengthStream;
-  final StreamController<List> _lengthController = StreamController<List>();
   Set<Marker> markers = {};
 
   @override
@@ -36,15 +33,12 @@ class _MyAppState extends State<MyApp> {
     getEnvVars();
     getLocationPermission();
     getCurrentLiveLocation();
-    // updateMarkersAndRoutes();
   }
 
   @override
   void dispose() {
     super.dispose();
     _positionStream.cancel();
-    _lengthStream.cancel();
-    _lengthController.close();
   }
 
   void getEnvVars() async {
@@ -56,7 +50,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   getCurrentLiveLocation() {
-    // getLocationPermission();
+    getLocationPermission();
     const LocationSettings locationSettings =
         LocationSettings(accuracy: LocationAccuracy.best, distanceFilter: 1);
     _positionStream =
@@ -66,32 +60,14 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  updateMarkersAndRoutes() {
-    _lengthStream = _lengthController.stream.listen((List value) {
-      if (value.length > 2) {
-        getRoute();
-      }
-    });
-  }
-
   setClosestIntersection(position) async {
     LatLng location = LatLng(position.latitude, position.longitude);
     livePoints.add(location);
-    // _lengthController.add(livePoints);
 
     if (!_isLoading) {
       if (livePoints.length >= 10) {
-        // double liveDirection = Geolocator.bearingBetween(
-        //     livePoints[0].latitude,
-        //     livePoints[0].longitude,
-        //     livePoints[1].latitude,
-        //     livePoints[1].longitude);
-        // LatLng? closestIntersection =
-        //     closestIntersection(livePoints[1], liveDirection);
         LatLng? closestIntersection =
             await closestIntersectionUsingAPI(livePoints[1], livePoints[0]);
-        // LatLng? closestIntersection =
-        //     await getClosestIntersectionUsingGeonamesOrg(livePoints[0]);
         livePoints.removeRange(0, 10);
         if (closestIntersection != null) {
           markers.clear();
@@ -107,19 +83,6 @@ class _MyAppState extends State<MyApp> {
       _currentPosition = location;
       _markers = markers;
       _isLoading = false;
-    });
-  }
-
-  getRoute() async {
-    var newRoute = await getSnapToRoads(livePoints);
-
-    MapsRoutes route = MapsRoutes();
-    await route.drawRoute(
-        livePoints, 'Test', Colors.teal, dotenv.get('GOOGLE_MAPS_API_KEY'));
-
-    setState(() {
-      // _routes = route.routes;
-      _routes = newRoute;
     });
   }
 

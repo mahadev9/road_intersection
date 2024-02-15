@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -77,62 +76,6 @@ Future getSnapToRoads(List<LatLng> points) async {
   return routes;
 }
 
-getCloserIntersection(List<LatLng> liveLatLng) {
-  // calculate distance from liveLatLngs to each intersection in knownIntersections and return the closest one
-  // return LatLng
-
-  double closestDistance = double.infinity;
-  LatLng closestIntersection = knownIntersections[0];
-  for (int i = 0; i < knownIntersections.length; i++) {
-    for (int j = 0; j < liveLatLng.length; j++) {
-      double distance = Geolocator.distanceBetween(
-        knownIntersections[i].latitude,
-        knownIntersections[i].longitude,
-        liveLatLng[j].latitude,
-        liveLatLng[j].longitude,
-      );
-      if (distance < closestDistance) {
-        closestDistance = distance;
-        closestIntersection = knownIntersections[i];
-      }
-    }
-  }
-  return closestIntersection;
-}
-
-LatLng? closestIntersection(LatLng liveLatLngs, double liveDirection) {
-  late LatLng closestIntersection;
-  double minDistance = double.infinity;
-
-  try {
-    for (var intersection in knownIntersections) {
-      double d = Geolocator.distanceBetween(liveLatLngs.latitude,
-          liveLatLngs.longitude, intersection.latitude, intersection.longitude);
-      double b = Geolocator.bearingBetween(liveLatLngs.latitude,
-          liveLatLngs.longitude, intersection.latitude, intersection.longitude);
-
-      if (isSameDirection(liveDirection, b) && d < minDistance) {
-        minDistance = d;
-        closestIntersection = intersection;
-      }
-    }
-    return closestIntersection;
-  } catch (e) {
-    return null;
-  }
-}
-
-bool isSameDirection(double direction1, double direction2,
-    [double tolerance = 10]) {
-  // Implement direction comparison here
-  var difference = (direction1 - direction2).abs();
-  // Normalize to the range [0, 360)
-  difference = difference >= 360 ? difference % 360 : difference;
-  // If the difference is greater than 180, it's shorter to go the other way
-  difference = difference > 180 ? 360 - difference : difference;
-  return difference <= tolerance;
-}
-
 Future<LatLng?> closestIntersectionUsingAPI(
     LatLng liveLatLngs, LatLng prevLatLng) async {
   double closestDistance = double.infinity;
@@ -141,9 +84,6 @@ Future<LatLng?> closestIntersectionUsingAPI(
     var distanceMatrix = await getDistanceMatrix(liveLatLngs);
     for (int i = 0; i < distanceMatrix.length; i++) {
       var polyline = await getRouteBtnPoints(prevLatLng, knownIntersections[i]);
-      // bool isOnPolyline = isPointOnPolyline(polyline, liveLatLngs);
-      // var polyline = await getRouteBtnPointsUsingToolkit(
-      //     prevLatLng, knownIntersections[i]);
       bool isOnPolyline = isLocationOnPath(
           LatLng(liveLatLngs.latitude, liveLatLngs.longitude), polyline, true,
           tolerance: 5);
@@ -176,25 +116,6 @@ getDistanceMatrix(LatLng location) async {
   return respPoints['rows'][0]['elements'];
 }
 
-bool isPointOnPolyline(List<LatLng> polyline, LatLng point) {
-  double lat = point.latitude;
-  double lng = point.longitude;
-  int intersections = 0;
-
-  for (int i = 0; i < polyline.length - 1; i++) {
-    double startX = polyline[i].latitude;
-    double startY = polyline[i].longitude;
-    double endX = polyline[i + 1].latitude;
-    double endY = polyline[i + 1].longitude;
-
-    if (((startY <= lng && lng < endY) || (endY <= lng && lng < startY)) &&
-        (lat < startX + (endX - startX) * (lng - startY) / (endY - startY))) {
-      intersections++;
-    }
-  }
-  return intersections % 2 != 0;
-}
-
 getRouteBtnPoints(startPoint, endPoint) async {
   var routes = await getSnapToRoads([startPoint, endPoint]);
   List<LatLng> routePoints = [];
@@ -202,61 +123,4 @@ getRouteBtnPoints(startPoint, endPoint) async {
     routePoints = route.points;
   });
   return routePoints;
-}
-
-// getRouteBtnPointsUsingToolkit(startPoint, endPoint) async {
-//   var points = [startPoint, endPoint];
-//   String url = 'https://roads.googleapis.com/v1/snapToRoads?path=';
-//   String yourApiKey = dotenv.get('GOOGLE_MAPS_API_KEY');
-
-//   for (int i = 0; i < points.length; i++) {
-//     url += '${points[i].latitude},${points[i].longitude}|';
-//   }
-
-//   url = url.substring(0, url.length - 1);
-//   url += '&interpolate=true&key=$yourApiKey';
-
-//   var response = await http.get(Uri.parse(url));
-//   var respPoints = jsonDecode(response.body);
-//   List<LatLng> routeCoordinates = [];
-//   respPoints['snappedPoints'].forEach((point) {
-//     routeCoordinates.add(
-//         LatLng(point['location']['latitude'], point['location']['longitude']));
-//   });
-//   return routeCoordinates;
-// }
-
-getDirectionsBtnPoints(startPoint, endPoint) async {
-  String url = 'https://maps.googleapis.com/maps/api/directions/json?';
-  String yourApiKey = dotenv.get('GOOGLE_MAPS_API_KEY');
-
-  url += 'origin=${startPoint.latitude},${startPoint.longitude}';
-  url += '&destination=${endPoint.latitude},${endPoint.longitude}';
-  url += '&key=$yourApiKey&mode=driving';
-
-  var response = await http.get(Uri.parse(url));
-  var respPoints = jsonDecode(response.body);
-  List<LatLng> routePoints = [];
-  respPoints['routes'][0]['legs'][0]['steps'].forEach((step) {
-    routePoints.add(
-        LatLng(step['start_location']['lat'], step['start_location']['lng']));
-  });
-  return routePoints;
-}
-
-Future<LatLng?> getClosestIntersectionUsingGeonamesOrg(LatLng location) async {
-  try {
-    String url = 'http://api.geonames.org/findNearestIntersectionJSON?';
-    String username = dotenv.get('GEONAMES_USERNAME');
-
-    url +=
-        'lat=${location.latitude}&lng=${location.longitude}&username=$username';
-
-    var response = await http.get(Uri.parse(url));
-    var respPoints = jsonDecode(response.body);
-    return LatLng(double.parse(respPoints['intersection']['lat']),
-        double.parse(respPoints['intersection']['lng']));
-  } catch (e) {
-    return null;
-  }
 }
