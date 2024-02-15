@@ -80,7 +80,7 @@ class _MyAppState extends State<MyApp> {
     // _lengthController.add(livePoints);
 
     if (!_isLoading) {
-      if (livePoints.length >= 2) {
+      if (livePoints.length >= 10) {
         // double liveDirection = Geolocator.bearingBetween(
         //     livePoints[0].latitude,
         //     livePoints[0].longitude,
@@ -88,11 +88,11 @@ class _MyAppState extends State<MyApp> {
         //     livePoints[1].longitude);
         // LatLng? closestIntersection =
         //     closestIntersection(livePoints[1], liveDirection);
-        // LatLng? closestIntersection =
-        //     await closestIntersectionUsingAPI(livePoints[1], livePoints[0]);
         LatLng? closestIntersection =
-            await getClosestIntersectionUsingGeonamesOrg(livePoints[0]);
-        livePoints.removeRange(0, 1);
+            await closestIntersectionUsingAPI(livePoints[1], livePoints[0]);
+        // LatLng? closestIntersection =
+        //     await getClosestIntersectionUsingGeonamesOrg(livePoints[0]);
+        livePoints.removeRange(0, 10);
         if (closestIntersection != null) {
           markers.clear();
           markers.add(Marker(
