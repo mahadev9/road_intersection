@@ -30,7 +30,7 @@ sinDeltaBearing(double lat1, double lng1, double lat2, double lng2, double lat3,
   double b = sin(lat31) + 2 * sinLat1 * cosLat3 * hav(lng31);
   double d = sin(lat21) + 2 * sinLat1 * cosLat2 * hav(lng21);
   double denom = (a * a + b * b) * (c * c + d * d);
-  return denom <= 0 ? 1 : (a * d - b * c) / sqrt(denom);
+  return denom <= 0 ? 1.0 : (a * d - b * c) / sqrt(denom);
 }
 
 sinFromHav(double h) {

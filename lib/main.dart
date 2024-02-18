@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:road_intersection/src/location_on_path.dart';
 import 'package:road_intersection/src/snap_to_roads.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -20,12 +21,11 @@ class _MyAppState extends State<MyApp> {
   late GoogleMapController mapController;
 
   late LatLng _currentPosition;
-  List<LatLng> livePoints = [];
-  Set<Polyline> _routes = {};
+  Map<LatLng, Map<String, dynamic>?> iMap = {};
   Set<Marker> _markers = {};
+  Set<Polyline> _routes = {};
   bool _isLoading = true;
   late StreamSubscription<Position> _positionStream;
-  Set<Marker> markers = {};
 
   @override
   void initState() {
@@ -62,22 +62,48 @@ class _MyAppState extends State<MyApp> {
 
   setClosestIntersection(position) async {
     LatLng location = LatLng(position.latitude, position.longitude);
-    livePoints.add(location);
+    Set<Marker> markers = {};
+
+    // if (!_isLoading) {
+    //   if (livePoints.length >= 100) {
+    //     LatLng? closestIntersection =
+    //         await closestIntersectionUsingAPI(livePoints[1], livePoints[0]);
+    //     livePoints.removeRange(0, 10);
+    //     if (closestIntersection != null) {
+    //       markers.clear();
+    //       markers.add(Marker(
+    //         markerId: const MarkerId('closest-intersection'),
+    //         position: closestIntersection,
+    //       ));
+    //     }
+    //   }
+    // }
 
     if (!_isLoading) {
-      if (livePoints.length >= 10) {
-        LatLng? closestIntersection =
-            await closestIntersectionUsingAPI(livePoints[1], livePoints[0]);
-        livePoints.removeRange(0, 10);
-        if (closestIntersection != null) {
-          markers.clear();
-          markers.add(Marker(
-            markerId: const MarkerId('closest-intersection'),
-            position: closestIntersection,
-          ));
-        }
+      if (iMap.isEmpty) {
+        iMap = (await intersectionsMap(_currentPosition))!;
+      }
+      if (iMap.isNotEmpty) {
+        iMap.forEach((key, value) {
+          bool isOnPolyline = isLocationOnPath(
+              location, value?['polyline'], true,
+              tolerance: 5);
+          print('isOnPolyline: $isOnPolyline');
+          if (isOnPolyline) {
+            markers.add(Marker(
+              markerId: const MarkerId('closest-intersection'),
+              position: key,
+            ));
+            return;
+          }
+        });
       }
     }
+    print('markers: $markers');
+
+    // if (markers.isEmpty) {
+    //   iMap.clear();
+    // }
 
     setState(() {
       _currentPosition = location;
@@ -104,9 +130,8 @@ class _MyAppState extends State<MyApp> {
               IconButton(
                   onPressed: () {
                     setState(() {
-                      livePoints = [];
-                      _markers = {};
                       _routes = {};
+                      _markers = {};
                     });
                   },
                   icon: const Text('Clear'),
