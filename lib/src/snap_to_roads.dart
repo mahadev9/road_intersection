@@ -78,22 +78,38 @@ Future getSnapToRoads(List<LatLng> points) async {
 
 Future<LatLng?> closestIntersectionUsingAPI(
     LatLng liveLatLngs, LatLng prevLatLng) async {
-  double closestDistance = double.infinity;
-  late LatLng closestIntersection;
   try {
+    // double closestDistance = double.infinity;
+    // late LatLng closestIntersection;
+    // var distanceMatrix = await getDistanceMatrix(liveLatLngs);
+    // for (int i = 0; i < distanceMatrix.length; i++) {
+    //   var polyline = await getRouteBtnPoints(prevLatLng, knownIntersections[i]);
+    //   bool isOnPolyline = isLocationOnPath(
+    //       LatLng(liveLatLngs.latitude, liveLatLngs.longitude), polyline, true,
+    //       tolerance: 5);
+    //   if (isOnPolyline &&
+    //       distanceMatrix[i]['distance']['value'].toDouble() < closestDistance) {
+    //     closestDistance = distanceMatrix[i]['distance']['value'].toDouble();
+    //     closestIntersection = knownIntersections[i];
+    //   }
+    // }
     var distanceMatrix = await getDistanceMatrix(liveLatLngs);
+    int minIndex = 0;
     for (int i = 0; i < distanceMatrix.length; i++) {
-      var polyline = await getRouteBtnPoints(prevLatLng, knownIntersections[i]);
-      bool isOnPolyline = isLocationOnPath(
-          LatLng(liveLatLngs.latitude, liveLatLngs.longitude), polyline, true,
-          tolerance: 5);
-      if (isOnPolyline &&
-          distanceMatrix[i]['distance']['value'].toDouble() < closestDistance) {
-        closestDistance = distanceMatrix[i]['distance']['value'].toDouble();
-        closestIntersection = knownIntersections[i];
+      if (distanceMatrix[i]['distance']['value'] <=
+          distanceMatrix[minIndex]['distance']['value']) {
+        minIndex = i;
       }
     }
-    return closestIntersection;
+    // var polyline =
+    //     await getRouteBtnPoints(prevLatLng, knownIntersections[minIndex]);
+    // var isOnPolyline = isLocationOnPath(
+    //     LatLng(liveLatLngs.latitude, liveLatLngs.longitude), polyline, true,
+    //     tolerance: 5);
+    // if (isOnPolyline) {
+    //   return knownIntersections[minIndex];
+    // }
+    return knownIntersections[minIndex];
   } catch (e) {
     return null;
   }
@@ -104,16 +120,32 @@ Future<Map<LatLng, Map<String, dynamic>>?> intersectionsMap(
   Map<LatLng, Map<String, dynamic>> iMap = {};
   try {
     var distanceMatrix = await getDistanceMatrix(liveLatLngs);
+    int minIndex = 0;
     for (int i = 0; i < distanceMatrix.length; i++) {
-      var polyline =
-          await getRouteBtnPoints(liveLatLngs, knownIntersections[i]);
-      iMap[knownIntersections[i]] = {
-        'distance': distanceMatrix[i]['distance']['value'].toDouble(),
-        'polyline': polyline
-      };
+      if (distanceMatrix[i]['distance']['value'] <=
+          distanceMatrix[minIndex]['distance']['value']) {
+        minIndex = i;
+      }
     }
-    iMap = Map.fromEntries(iMap.entries.toList()
-      ..sort((e1, e2) => e1.value['distance'].compareTo(e2.value['distance'])));
+    var polyline =
+        await getRouteBtnPoints(liveLatLngs, knownIntersections[minIndex]);
+    // var polyline =
+    //     await getSnapToRoads([liveLatLngs, knownIntersections[minIndex]]);
+    iMap[knownIntersections[minIndex]] = {
+      'distance': distanceMatrix[minIndex]['distance']['value'].toDouble(),
+      'polyline': polyline
+    };
+    // for (int i = 0; i < distanceMatrix.length; i++) {
+    //   var polyline =
+    //       await getRouteBtnPoints(liveLatLngs, knownIntersections[i]);
+    //   print(polyline);
+    //   iMap[knownIntersections[i]] = {
+    //     'distance': distanceMatrix[i]['distance']['value'].toDouble(),
+    //     'polyline': polyline
+    //   };
+    // }
+    // iMap = Map.fromEntries(iMap.entries.toList()
+    //   ..sort((e1, e2) => e1.value['distance'].compareTo(e2.value['distance'])));
     return iMap;
   } catch (e) {
     return null;

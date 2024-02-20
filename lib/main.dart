@@ -23,7 +23,10 @@ class _MyAppState extends State<MyApp> {
   late LatLng _currentPosition;
   Map<LatLng, Map<String, dynamic>?> iMap = {};
   Set<Marker> _markers = {};
+  // Set<Marker> markers = {};
   Set<Polyline> _routes = {};
+  Set<Polyline> routes = {};
+  List<LatLng> livePoints = [];
   bool _isLoading = true;
   late StreamSubscription<Position> _positionStream;
 
@@ -64,17 +67,40 @@ class _MyAppState extends State<MyApp> {
     LatLng location = LatLng(position.latitude, position.longitude);
     Set<Marker> markers = {};
 
+    // livePoints.add(location);
     // if (!_isLoading) {
-    //   if (livePoints.length >= 100) {
+    //   if (livePoints.length >= 4) {
     //     LatLng? closestIntersection =
     //         await closestIntersectionUsingAPI(livePoints[1], livePoints[0]);
-    //     livePoints.removeRange(0, 10);
+    //     livePoints.removeRange(0, 4);
     //     if (closestIntersection != null) {
     //       markers.clear();
     //       markers.add(Marker(
     //         markerId: const MarkerId('closest-intersection'),
     //         position: closestIntersection,
     //       ));
+    //     }
+    //   }
+    // }
+
+    // if (!_isLoading) {
+    //   if (livePoints.length >= 3) {
+    //     iMap = (await intersectionsMap(livePoints[0]))!;
+    //     livePoints.removeRange(0, 3);
+    //     if (iMap.isNotEmpty) {
+    //       iMap.forEach((key, value) {
+    //         markers.clear();
+    //         routes.clear();
+    //         markers.add(Marker(
+    //           markerId: const MarkerId('closest-intersection'),
+    //           position: key,
+    //         ));
+    //         routes.add(Polyline(
+    //           polylineId: const PolylineId('closest-intersection'),
+    //           color: Colors.lightBlue,
+    //           points: value?['polyline'],
+    //         ));
+    //       });
     //     }
     //   }
     // }
@@ -88,24 +114,27 @@ class _MyAppState extends State<MyApp> {
           bool isOnPolyline = isLocationOnPath(
               location, value?['polyline'], true,
               tolerance: 5);
-          print('isOnPolyline: $isOnPolyline');
           if (isOnPolyline) {
             markers.add(Marker(
               markerId: const MarkerId('closest-intersection'),
               position: key,
             ));
-            return;
+            // routes.clear();
+            // routes.add(Polyline(
+            //   polylineId: const PolylineId('closest-intersection'),
+            //   color: Colors.lightBlue,
+            //   points: value?['polyline'],
+            // ));
           }
         });
       }
     }
-    print('markers: $markers');
-
-    // if (markers.isEmpty) {
-    //   iMap.clear();
-    // }
+    if (markers.isEmpty) {
+      iMap.clear();
+    }
 
     setState(() {
+      _routes = routes;
       _currentPosition = location;
       _markers = markers;
       _isLoading = false;

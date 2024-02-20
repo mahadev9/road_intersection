@@ -108,11 +108,11 @@ bool isLocationOnPath(LatLng point, List<LatLng> polyline, bool geodesic,
   const earthRadius = 6371009.0;
   var toleranceEarth = tolerance / earthRadius;
   var havTolerance = hav(toleranceEarth);
-  var lat3 = point.latitude;
-  var lng3 = point.longitude;
+  var lat3 = radians(point.latitude);
+  var lng3 = radians(point.longitude);
   var prev = polyline[0];
-  var lat1 = prev.latitude;
-  var lng1 = prev.longitude;
+  var lat1 = radians(prev.latitude);
+  var lng1 = radians(prev.longitude);
   var idx = 0;
   if (geodesic) {
     for (var point2 in polyline) {
