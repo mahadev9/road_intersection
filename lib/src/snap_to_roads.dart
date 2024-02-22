@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:road_intersection/src/location_on_path.dart';
 
 const List<LatLng> knownIntersections = [
   LatLng(39.684158993061466, -75.73945768347694),
@@ -74,45 +73,6 @@ Future getSnapToRoads(List<LatLng> points) async {
 
   routes.add(route);
   return routes;
-}
-
-Future<LatLng?> closestIntersectionUsingAPI(
-    LatLng liveLatLngs, LatLng prevLatLng) async {
-  try {
-    // double closestDistance = double.infinity;
-    // late LatLng closestIntersection;
-    // var distanceMatrix = await getDistanceMatrix(liveLatLngs);
-    // for (int i = 0; i < distanceMatrix.length; i++) {
-    //   var polyline = await getRouteBtnPoints(prevLatLng, knownIntersections[i]);
-    //   bool isOnPolyline = isLocationOnPath(
-    //       LatLng(liveLatLngs.latitude, liveLatLngs.longitude), polyline, true,
-    //       tolerance: 5);
-    //   if (isOnPolyline &&
-    //       distanceMatrix[i]['distance']['value'].toDouble() < closestDistance) {
-    //     closestDistance = distanceMatrix[i]['distance']['value'].toDouble();
-    //     closestIntersection = knownIntersections[i];
-    //   }
-    // }
-    var distanceMatrix = await getDistanceMatrix(liveLatLngs);
-    int minIndex = 0;
-    for (int i = 0; i < distanceMatrix.length; i++) {
-      if (distanceMatrix[i]['distance']['value'] <=
-          distanceMatrix[minIndex]['distance']['value']) {
-        minIndex = i;
-      }
-    }
-    // var polyline =
-    //     await getRouteBtnPoints(prevLatLng, knownIntersections[minIndex]);
-    // var isOnPolyline = isLocationOnPath(
-    //     LatLng(liveLatLngs.latitude, liveLatLngs.longitude), polyline, true,
-    //     tolerance: 5);
-    // if (isOnPolyline) {
-    //   return knownIntersections[minIndex];
-    // }
-    return knownIntersections[minIndex];
-  } catch (e) {
-    return null;
-  }
 }
 
 Future<Map<LatLng, Map<String, dynamic>>?> intersectionsMap(
