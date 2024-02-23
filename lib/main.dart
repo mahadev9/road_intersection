@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -24,21 +25,21 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   late GoogleMapController mapController;
-
   late LatLng _currentPosition;
   Map<LatLng, Map<String, dynamic>?> iMap = {};
   Set<Marker> _markers = {};
   Set<Polyline> _routes = {};
-  Set<Polyline> routes = {};
   List<List<dynamic>> livePoints = [];
   bool _isLoading = true;
   late StreamSubscription<Position> _positionStream;
   List<LatLng> knownIntersections = [];
+  late MapType _mapType;
 
   @override
   void initState() {
     super.initState();
     getEnvVars();
+    _mapType = MapType.normal;
     getLocationPermission();
     getCurrentLiveLocation();
   }
@@ -55,9 +56,6 @@ class _MyAppState extends State<MyApp> {
 
   getLocationPermission() async {
     await Geolocator.requestPermission();
-    setState(() {
-      _isLoading = false;
-    });
   }
 
   getStoragePermission() async {
@@ -81,6 +79,7 @@ class _MyAppState extends State<MyApp> {
   setClosestIntersection(position) async {
     LatLng location = LatLng(position.latitude, position.longitude);
     Set<Marker> markers = {};
+    Set<Polyline> routes = {};
 
     if (!_isLoading) {
       if (iMap.isEmpty) {
@@ -153,6 +152,16 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
+  _currentLocation() async {
+    mapController.animateCamera(CameraUpdate.newCameraPosition(
+      CameraPosition(
+        bearing: 0,
+        target: LatLng(_currentPosition.latitude, _currentPosition.longitude),
+        zoom: 16.0,
+      ),
+    ));
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -197,8 +206,38 @@ class _MyAppState extends State<MyApp> {
                     ),
                     compassEnabled: true,
                     myLocationEnabled: true,
-                    myLocationButtonEnabled: true,
+                    myLocationButtonEnabled: false,
                     markers: _markers,
+                    mapType: _mapType,
+                  ),
+                  Positioned(
+                    top: 5,
+                    right: 5,
+                    child: Column(
+                      children: [
+                        FloatingActionButton(
+                          backgroundColor: Colors.white,
+                          foregroundColor: Colors.black,
+                          onPressed: _currentLocation,
+                          shape: const CircleBorder(),
+                          child: const Icon(Icons.my_location),
+                        ),
+                        const SizedBox(height: 10),
+                        FloatingActionButton(
+                          backgroundColor: Colors.white,
+                          foregroundColor: Colors.black,
+                          onPressed: () {
+                            setState(() {
+                              _mapType = _mapType == MapType.normal
+                                  ? MapType.satellite
+                                  : MapType.normal;
+                            });
+                          },
+                          shape: const CircleBorder(),
+                          child: const Icon(Icons.map),
+                        ),
+                      ],
+                    ),
                   ),
                 ]),
         ));
