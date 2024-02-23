@@ -2,11 +2,12 @@ import 'dart:async';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:road_intersection/src/csvFile.dart';
 import 'package:road_intersection/src/location_on_path.dart';
+import 'package:road_intersection/src/showToast.dart';
 import 'package:road_intersection/src/snap_to_roads.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -29,7 +30,7 @@ class _MyAppState extends State<MyApp> {
   Set<Marker> _markers = {};
   Set<Polyline> _routes = {};
   Set<Polyline> routes = {};
-  List livePoints = [];
+  List<List<dynamic>> livePoints = [];
   bool _isLoading = true;
   late StreamSubscription<Position> _positionStream;
   List<LatLng> knownIntersections = [];
@@ -54,6 +55,16 @@ class _MyAppState extends State<MyApp> {
 
   getLocationPermission() async {
     await Geolocator.requestPermission();
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
+  getStoragePermission() async {
+    var status = await Permission.storage.status;
+    if (!status.isGranted) {
+      await Permission.storage.request();
+    }
   }
 
   getCurrentLiveLocation() {
@@ -63,11 +74,7 @@ class _MyAppState extends State<MyApp> {
     _positionStream =
         Geolocator.getPositionStream(locationSettings: locationSettings)
             .listen((Position position) {
-      setState(() {
-        _isLoading = false;
-        _currentPosition = LatLng(position.latitude, position.longitude);
-      });
-      // setClosestIntersection(position);
+      setClosestIntersection(position);
     });
   }
 
@@ -122,7 +129,8 @@ class _MyAppState extends State<MyApp> {
     mapController = controller;
   }
 
-  onSaveButton() {
+  onSaveButton() async {
+    await getStoragePermission();
     saveLocationAndIntersections(livePoints);
   }
 
@@ -135,27 +143,13 @@ class _MyAppState extends State<MyApp> {
       File file = File(result.files.single.path!);
       var ki = await loadIntersectionCoordinates(file);
       if (ki.isEmpty) {
-        Fluttertoast.showToast(
-            msg: "Failed to parse the csv file. Please try again.",
-            toastLength: Toast.LENGTH_SHORT,
-            gravity: ToastGravity.CENTER,
-            timeInSecForIosWeb: 3,
-            backgroundColor: Colors.red,
-            textColor: Colors.white,
-            fontSize: 16.0);
+        showToast("Selected csv file is empty. Please select another file.");
       }
       setState(() {
         knownIntersections = ki;
       });
     } else {
-      Fluttertoast.showToast(
-          msg: "Please select a csv file.",
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.CENTER,
-          timeInSecForIosWeb: 3,
-          backgroundColor: Colors.red,
-          textColor: Colors.white,
-          fontSize: 16.0);
+      showToast("Please select a csv file.");
     }
   }
 
