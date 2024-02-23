@@ -5,9 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:road_intersection/src/csvFile.dart';
+import 'package:road_intersection/src/csv_file.dart';
 import 'package:road_intersection/src/location_on_path.dart';
-import 'package:road_intersection/src/showToast.dart';
+import 'package:road_intersection/src/show_toast.dart';
 import 'package:road_intersection/src/snap_to_roads.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
