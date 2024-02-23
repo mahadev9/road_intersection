@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -33,6 +32,7 @@ class _MyAppState extends State<MyApp> {
   bool _isLoading = true;
   late StreamSubscription<Position> _positionStream;
   List<LatLng> knownIntersections = [];
+  List<LatLng> nearestIntersections = [];
   late MapType _mapType;
 
   @override
@@ -40,7 +40,7 @@ class _MyAppState extends State<MyApp> {
     super.initState();
     getEnvVars();
     _mapType = MapType.normal;
-    getLocationPermission();
+    // getLocationPermission();
     getCurrentLiveLocation();
   }
 
@@ -65,8 +65,10 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  getCurrentLiveLocation() {
-    getLocationPermission();
+  getCurrentLiveLocation() async {
+    if (!await Permission.location.isGranted) {
+      await getLocationPermission();
+    }
     const LocationSettings locationSettings =
         LocationSettings(accuracy: LocationAccuracy.best, distanceFilter: 1);
     _positionStream =
@@ -83,7 +85,8 @@ class _MyAppState extends State<MyApp> {
 
     if (!_isLoading) {
       if (iMap.isEmpty) {
-        iMap = (await intersectionsMap(_currentPosition))!;
+        iMap =
+            (await intersectionsMap(_currentPosition, nearestIntersections))!;
       }
       if (iMap.isNotEmpty) {
         iMap.forEach((key, value) {
@@ -171,7 +174,11 @@ class _MyAppState extends State<MyApp> {
         ),
         home: Scaffold(
           appBar: AppBar(
-            title: const Text('Map'),
+            backgroundColor: Theme.of(context).primaryColorLight,
+            title: const Text(
+              'Map',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 30),
+            ),
             actions: [
               IconButton(
                 onPressed: onLoadButton,
@@ -209,36 +216,40 @@ class _MyAppState extends State<MyApp> {
                     myLocationButtonEnabled: false,
                     markers: _markers,
                     mapType: _mapType,
+                    zoomControlsEnabled: false,
                   ),
                   Positioned(
                     top: 5,
                     right: 5,
-                    child: Column(
-                      children: [
-                        FloatingActionButton(
-                          backgroundColor: Colors.white,
-                          foregroundColor: Colors.black,
-                          onPressed: _currentLocation,
-                          shape: const CircleBorder(),
-                          child: const Icon(Icons.my_location),
-                        ),
-                        const SizedBox(height: 10),
-                        FloatingActionButton(
-                          backgroundColor: Colors.white,
-                          foregroundColor: Colors.black,
-                          onPressed: () {
-                            setState(() {
-                              _mapType = _mapType == MapType.normal
-                                  ? MapType.satellite
-                                  : MapType.normal;
-                            });
-                          },
-                          shape: const CircleBorder(),
-                          child: const Icon(Icons.map),
-                        ),
-                      ],
+                    child: FloatingActionButton(
+                      mini: true,
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.black,
+                      onPressed: () {
+                        setState(() {
+                          _mapType = _mapType == MapType.normal
+                              ? MapType.satellite
+                              : MapType.normal;
+                        });
+                      },
+                      shape: const CircleBorder(),
+                      child: const Icon(
+                        Icons.map,
+                        size: 20,
+                      ),
                     ),
                   ),
+                  Positioned(
+                    bottom: 25,
+                    right: 5,
+                    child: FloatingActionButton(
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.black,
+                      onPressed: _currentLocation,
+                      shape: const CircleBorder(),
+                      child: const Icon(Icons.my_location),
+                    ),
+                  )
                 ]),
         ));
   }
