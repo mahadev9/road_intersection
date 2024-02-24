@@ -143,6 +143,7 @@ class _MyAppState extends State<MyApp> {
     }
 
     livePoints.add([
+      DateTime.now().toIso8601String(),
       location.latitude,
       location.longitude,
       markers.isEmpty ? null : markers.first.position.latitude,
