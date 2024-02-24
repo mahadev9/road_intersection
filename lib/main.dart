@@ -74,7 +74,14 @@ class _MyAppState extends State<MyApp> {
     _positionStream =
         Geolocator.getPositionStream(locationSettings: locationSettings)
             .listen((Position position) {
+      updateLocation(position);
       setClosestIntersection(position);
+    });
+  }
+
+  updateLocation(Position position) {
+    setState(() {
+      _currentPosition = LatLng(position.latitude, position.longitude);
     });
   }
 
@@ -82,11 +89,34 @@ class _MyAppState extends State<MyApp> {
     LatLng location = LatLng(position.latitude, position.longitude);
     Set<Marker> markers = {};
     Set<Polyline> routes = {};
+    List<LatLng> ni = nearestIntersections;
+
+    bool anyIntersection = ni.any((ki) =>
+        Geolocator.distanceBetween(
+            ki.latitude, ki.longitude, location.latitude, location.longitude) <=
+        1500);
+
+    if (knownIntersections.isNotEmpty && !anyIntersection) {
+      ni = knownIntersections
+          .where((ki) =>
+              Geolocator.distanceBetween(ki.latitude, ki.longitude,
+                  location.latitude, location.longitude) <=
+              1000)
+          .toList();
+
+      ni.sort((a, b) => Geolocator.distanceBetween(
+              a.latitude, a.longitude, location.latitude, location.longitude)
+          .compareTo(Geolocator.distanceBetween(
+              b.latitude, b.longitude, location.latitude, location.longitude)));
+
+      if (ni.length > 25) {
+        ni = ni.sublist(0, 25);
+      }
+    }
 
     if (!_isLoading) {
-      if (iMap.isEmpty) {
-        iMap =
-            (await intersectionsMap(_currentPosition, nearestIntersections))!;
+      if (iMap.isEmpty && ni.isNotEmpty) {
+        iMap = (await intersectionsMap(_currentPosition, ni))!;
       }
       if (iMap.isNotEmpty) {
         iMap.forEach((key, value) {
@@ -121,7 +151,7 @@ class _MyAppState extends State<MyApp> {
 
     setState(() {
       _routes = routes;
-      _currentPosition = location;
+      nearestIntersections = ni;
       _markers = markers;
       _isLoading = false;
     });
