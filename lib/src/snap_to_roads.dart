@@ -113,19 +113,23 @@ Future<Map<LatLng, Map<String, dynamic>>?> intersectionsMap(
 }
 
 getDistanceMatrix(LatLng location, intersections) async {
-  String url = 'https://maps.googleapis.com/maps/api/distancematrix/json?';
-  String yourApiKey = dotenv.get('GOOGLE_MAPS_API_KEY');
+  try {
+    String url = 'https://maps.googleapis.com/maps/api/distancematrix/json?';
+    String yourApiKey = dotenv.get('GOOGLE_MAPS_API_KEY');
 
-  url += 'origins=${location.latitude},${location.longitude}';
-  url += '&destinations=';
-  for (int i = 0; i < intersections.length; i++) {
-    url += '${intersections[i].latitude},${intersections[i].longitude}|';
+    url += 'origins=${location.latitude},${location.longitude}';
+    url += '&destinations=';
+    for (int i = 0; i < intersections.length; i++) {
+      url += '${intersections[i].latitude},${intersections[i].longitude}|';
+    }
+    url += '&key=$yourApiKey&mode=driving';
+
+    var response = await http.get(Uri.parse(url));
+    var respPoints = jsonDecode(response.body);
+    return respPoints['rows'][0]['elements'];
+  } catch (e) {
+    return [];
   }
-  url += '&key=$yourApiKey&mode=driving';
-
-  var response = await http.get(Uri.parse(url));
-  var respPoints = jsonDecode(response.body);
-  return respPoints['rows'][0]['elements'];
 }
 
 getRouteBtnPoints(startPoint, endPoint) async {

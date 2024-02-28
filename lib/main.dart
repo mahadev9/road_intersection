@@ -177,6 +177,8 @@ class _MyAppState extends State<MyApp> {
       var ki = await loadIntersectionCoordinates(file);
       if (ki.isEmpty) {
         showToast("Selected csv file is empty. Please select another file.");
+      } else {
+        showToast("Loaded ${ki.length} intersection coordinates.");
       }
       setState(() {
         knownIntersections = ki;
