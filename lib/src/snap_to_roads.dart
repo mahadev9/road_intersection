@@ -75,9 +75,9 @@ Future getSnapToRoads(List<LatLng> points) async {
   return routes;
 }
 
-Future<Map<LatLng, Map<String, dynamic>>?> intersectionsMap(
+Future<Map<String, Map<String, dynamic>>?> intersectionsMap(
     LatLng liveLatLngs, intersections) async {
-  Map<LatLng, Map<String, dynamic>> iMap = {};
+  Map<String, Map<String, dynamic>> iMap = {};
   try {
     var distanceMatrix = await getDistanceMatrix(liveLatLngs, intersections);
     int minIndex = 0;
@@ -87,11 +87,13 @@ Future<Map<LatLng, Map<String, dynamic>>?> intersectionsMap(
         minIndex = i;
       }
     }
-    var polyline =
-        await getRouteBtnPoints(liveLatLngs, intersections[minIndex]);
+    var labels = intersections.keys.toList();
+    var latLngs = intersections.values.toList();
+    var polyline = await getRouteBtnPoints(liveLatLngs, latLngs[minIndex]);
     // var polyline =
     //     await getSnapToRoads([liveLatLngs, intersections[minIndex]]);
-    iMap[intersections[minIndex]] = {
+    iMap[labels[minIndex]] = {
+      'location': latLngs[minIndex],
       'distance': distanceMatrix[minIndex]['distance']['value'].toDouble(),
       'polyline': polyline
     };
@@ -119,9 +121,9 @@ getDistanceMatrix(LatLng location, intersections) async {
 
     url += 'origins=${location.latitude},${location.longitude}';
     url += '&destinations=';
-    for (int i = 0; i < intersections.length; i++) {
-      url += '${intersections[i].latitude},${intersections[i].longitude}|';
-    }
+    intersections.values.forEach((intersection) {
+      url += '${intersection.latitude},${intersection.longitude}|';
+    });
     url += '&key=$yourApiKey&mode=driving';
 
     var response = await http.get(Uri.parse(url));

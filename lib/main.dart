@@ -25,14 +25,14 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   late GoogleMapController mapController;
   late LatLng _currentPosition;
-  Map<LatLng, Map<String, dynamic>?> iMap = {};
+  Map<String, Map<String, dynamic>?> iMap = {};
   Set<Marker> _markers = {};
   Set<Polyline> _routes = {};
   List<List<dynamic>> livePoints = [];
   bool _isLoading = true;
   late StreamSubscription<Position> _positionStream;
-  List<LatLng> knownIntersections = [];
-  List<LatLng> nearestIntersections = [];
+  Map<String, LatLng> knownIntersections = {};
+  Map<String, LatLng> nearestIntersections = {};
   late MapType _mapType;
 
   @override
@@ -89,28 +89,32 @@ class _MyAppState extends State<MyApp> {
     LatLng location = LatLng(position.latitude, position.longitude);
     Set<Marker> markers = {};
     Set<Polyline> routes = {};
-    List<LatLng> ni = nearestIntersections;
+    Map<String, LatLng> ni = nearestIntersections;
 
-    bool anyIntersection = ni.any((ki) =>
+    bool anyIntersection = ni.values.any((ki) =>
         Geolocator.distanceBetween(
             ki.latitude, ki.longitude, location.latitude, location.longitude) <=
-        1500);
+        1000);
 
     if (knownIntersections.isNotEmpty && !anyIntersection) {
-      ni = knownIntersections
-          .where((ki) =>
-              Geolocator.distanceBetween(ki.latitude, ki.longitude,
-                  location.latitude, location.longitude) <=
+      ni = Map.fromEntries(knownIntersections.entries
+          .where((entry) =>
+              Geolocator.distanceBetween(
+                  entry.value.latitude,
+                  entry.value.longitude,
+                  location.latitude,
+                  location.longitude) <=
               1000)
-          .toList();
+          .map((entry) => MapEntry(entry.key, entry.value)));
 
-      ni.sort((a, b) => Geolocator.distanceBetween(
-              a.latitude, a.longitude, location.latitude, location.longitude)
-          .compareTo(Geolocator.distanceBetween(
-              b.latitude, b.longitude, location.latitude, location.longitude)));
+      ni = Map.fromEntries(ni.entries.toList()
+        ..sort((e1, e2) => Geolocator.distanceBetween(e1.value.latitude,
+                e1.value.longitude, location.latitude, location.longitude)
+            .compareTo(Geolocator.distanceBetween(e2.value.latitude,
+                e2.value.longitude, location.latitude, location.longitude))));
 
       if (ni.length > 25) {
-        ni = ni.sublist(0, 25);
+        ni = Map.fromEntries(ni.entries.take(25).toList());
       }
     }
 
@@ -125,15 +129,15 @@ class _MyAppState extends State<MyApp> {
               tolerance: 5);
           if (isOnPolyline) {
             markers.add(Marker(
-              markerId: const MarkerId('closest-intersection'),
-              position: key,
+              markerId: MarkerId('closest-intersection-$key'),
+              position: value?['location'],
+              infoWindow: InfoWindow(title: key),
             ));
-            // routes.clear();
-            // routes.add(Polyline(
-            //   polylineId: const PolylineId('closest-intersection'),
-            //   color: Colors.lightBlue,
-            //   points: value?['polyline'],
-            // ));
+            routes.add(Polyline(
+              polylineId: PolylineId('closest-intersection-route-$key'),
+              color: Colors.lightBlue,
+              points: value?['polyline'],
+            ));
           }
         });
       }
@@ -146,6 +150,8 @@ class _MyAppState extends State<MyApp> {
       DateTime.now().toIso8601String(),
       location.latitude,
       location.longitude,
+      position.speed,
+      markers.isEmpty ? null : markers.first.infoWindow.title,
       markers.isEmpty ? null : markers.first.position.latitude,
       markers.isEmpty ? null : markers.first.position.longitude
     ]);
@@ -174,7 +180,7 @@ class _MyAppState extends State<MyApp> {
     );
     if (result != null) {
       File file = File(result.files.single.path!);
-      var ki = await loadIntersectionCoordinates(file);
+      Map<String, LatLng> ki = await loadIntersectionCoordinates(file);
       if (ki.isEmpty) {
         showToast("Selected csv file is empty. Please select another file.");
       } else {

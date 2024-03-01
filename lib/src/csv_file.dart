@@ -20,8 +20,8 @@ Future<String> getExternalDocumentPath() async {
   return exPath;
 }
 
-Future<List<LatLng>> loadIntersectionCoordinates(fileName) async {
-  List<LatLng> points = [];
+Future<Map<String, LatLng>> loadIntersectionCoordinates(fileName) async {
+  Map<String, LatLng> points = {};
   try {
     final input = fileName.openRead();
     final fields = await input
@@ -31,8 +31,8 @@ Future<List<LatLng>> loadIntersectionCoordinates(fileName) async {
         .toList();
     if (fields.isNotEmpty) {
       for (var i = 1; i < fields.length; i++) {
-        points.add(
-            LatLng(double.parse(fields[i][1]), double.parse(fields[i][2])));
+        points[fields[i][0]] =
+            LatLng(double.parse(fields[i][1]), double.parse(fields[i][2]));
       }
     }
     return points;
