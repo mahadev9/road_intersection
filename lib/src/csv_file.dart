@@ -43,7 +43,10 @@ Future<Map<String, LatLng>> loadIntersectionCoordinates(fileName) async {
 }
 
 saveLocationAndIntersections(points) async {
-  String fileName = 'location_and_intersections.csv';
+  var today = DateTime.now();
+  String dateFormat =
+      '${today.year.toString()}_${today.month.toString().padLeft(2, '0')}_${today.day.toString().padLeft(2, '0')}_${today.hour.toString().padLeft(2, '0')}_${today.minute.toString().padLeft(2, '0')}';
+  String fileName = 'location_and_intersections_$dateFormat.csv';
   final directory = await getExternalDocumentPath();
   String csv = const ListToCsvConverter().convert(points);
   File file = File('$directory/$fileName');
