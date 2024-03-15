@@ -75,43 +75,13 @@ Future getSnapToRoads(List<LatLng> points) async {
   return routes;
 }
 
-Future<Map<String, Map<String, dynamic>>?> intersectionsMap(
-    LatLng liveLatLngs, intersections) async {
-  Map<String, Map<String, dynamic>> iMap = {};
-  try {
-    var distanceMatrix = await getDistanceMatrix(liveLatLngs, intersections);
-    int minIndex = 0;
-    for (int i = 0; i < distanceMatrix.length; i++) {
-      if (distanceMatrix[i]['distance']['value'] <=
-          distanceMatrix[minIndex]['distance']['value']) {
-        minIndex = i;
-      }
-    }
-    var labels = intersections.keys.toList();
-    var latLngs = intersections.values.toList();
-    var polyline = await getRouteBtnPoints(liveLatLngs, latLngs[minIndex]);
-    // var polyline =
-    //     await getSnapToRoads([liveLatLngs, intersections[minIndex]]);
-    iMap[labels[minIndex]] = {
-      'location': latLngs[minIndex],
-      'distance': distanceMatrix[minIndex]['distance']['value'].toDouble(),
-      'polyline': polyline
-    };
-    // for (int i = 0; i < distanceMatrix.length; i++) {
-    //   var polyline =
-    //       await getRouteBtnPoints(liveLatLngs, intersections[i]);
-    //   print(polyline);
-    //   iMap[intersections[i]] = {
-    //     'distance': distanceMatrix[i]['distance']['value'].toDouble(),
-    //     'polyline': polyline
-    //   };
-    // }
-    // iMap = Map.fromEntries(iMap.entries.toList()
-    //   ..sort((e1, e2) => e1.value['distance'].compareTo(e2.value['distance'])));
-    return iMap;
-  } catch (e) {
-    return null;
-  }
+getRouteBtnPoints(startPoint, endPoint) async {
+  var routes = await getSnapToRoads([startPoint, endPoint]);
+  List<LatLng> routePoints = [];
+  routes.forEach((route) {
+    routePoints = route.points;
+  });
+  return routePoints;
 }
 
 getDistanceMatrix(LatLng location, intersections) async {
@@ -134,11 +104,115 @@ getDistanceMatrix(LatLng location, intersections) async {
   }
 }
 
-getRouteBtnPoints(startPoint, endPoint) async {
-  var routes = await getSnapToRoads([startPoint, endPoint]);
+Future<List<LatLng>> getDrivingRoute(LatLng start, LatLng end) async {
+  String url = 'https://maps.googleapis.com/maps/api/directions/json?';
+  String yourApiKey = dotenv.get('GOOGLE_MAPS_API_KEY');
   List<LatLng> routePoints = [];
-  routes.forEach((route) {
-    routePoints = route.points;
-  });
+
+  url += 'origin=${start.latitude},${start.longitude}';
+  url += '&destination=${end.latitude},${end.longitude}';
+  url += '&key=$yourApiKey&mode=driving';
+
+  try {
+    var response = await http.get(Uri.parse(url));
+    var directions = jsonDecode(response.body);
+
+    if (directions['status'] == 'OK') {
+      var routes = directions['routes'];
+      if (routes.isNotEmpty) {
+        var legs = routes[0]['legs'];
+        if (legs.isNotEmpty) {
+          var steps = legs[0]['steps'];
+          for (var step in steps) {
+            var decodedPolyline = decodePolyline(step['polyline']['points']);
+            if (decodedPolyline.isNotEmpty) {
+              routePoints.addAll(decodedPolyline as Iterable<LatLng>);
+            }
+            // for (var point in decodedPolyline) {
+            //   routePoints.add(LatLng(point[0], point[1]));
+            // }
+          }
+        }
+      }
+    }
+  } catch (e) {
+    // print(e);
+  }
+
   return routePoints;
+}
+
+// Decodes a polyline that was encoded using the Google Maps method.
+// https://developers.google.com/maps/documentation/utilities/polylinealgorithm
+List decodePolyline(String encodedPolyline) {
+  List<LatLng> points = [];
+  int index = 0, len = encodedPolyline.length;
+  int lat = 0, lng = 0;
+  BigInt big0 = BigInt.from(0);
+  BigInt big0x1f = BigInt.from(0x1f);
+  BigInt big0x20 = BigInt.from(0x20);
+
+  while (index < len) {
+    int shift = 0;
+    BigInt b, result;
+    result = big0;
+    do {
+      b = BigInt.from(encodedPolyline.codeUnitAt(index++) - 63);
+      result |= (b & big0x1f) << shift;
+      shift += 5;
+    } while (b >= big0x20);
+    BigInt rShifted = result >> 1;
+    int dLat;
+    if (result.isOdd) {
+      dLat = (~rShifted).toInt();
+    } else {
+      dLat = rShifted.toInt();
+    }
+    lat += dLat;
+
+    shift = 0;
+    result = big0;
+    do {
+      b = BigInt.from(encodedPolyline.codeUnitAt(index++) - 63);
+      result |= (b & big0x1f) << shift;
+      shift += 5;
+    } while (b >= big0x20);
+    rShifted = result >> 1;
+    int dLng;
+    if (result.isOdd) {
+      dLng = (~rShifted).toInt();
+    } else {
+      dLng = rShifted.toInt();
+    }
+    lng += dLng;
+
+    points.add(LatLng((lat / 1E5).toDouble(), (lng / 1E5).toDouble()));
+  }
+  return points;
+}
+
+Future<Map<String, Map<String, dynamic>>?> intersectionsMap(
+    LatLng liveLatLngs, intersections) async {
+  Map<String, Map<String, dynamic>> iMap = {};
+  try {
+    var distanceMatrix = await getDistanceMatrix(liveLatLngs, intersections);
+    int minIndex = 0;
+    for (int i = 0; i < distanceMatrix.length; i++) {
+      if (distanceMatrix[i]['distance']['value'] <=
+          distanceMatrix[minIndex]['distance']['value']) {
+        minIndex = i;
+      }
+    }
+    var labels = intersections.keys.toList();
+    var latLngs = intersections.values.toList();
+    var polyline = await getDrivingRoute(liveLatLngs, latLngs[minIndex]);
+    iMap[labels[minIndex]] = {
+      'location': latLngs[minIndex],
+      'distance': distanceMatrix[minIndex]['distance']['value'].toDouble(),
+      'polyline': polyline
+    };
+  } catch (e) {
+    // print(e);
+  }
+  return iMap;
 }
