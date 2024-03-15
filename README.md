@@ -1,16 +1,35 @@
-# road_intersection
+# Nearest Intersection on a Road
 
-A new Flutter project.
+A Flutter project.
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
+Add below files to your project:
+- `assets/.env`
+- `android/app/src/main/res/values/keys.xml`
+- `ios/Runner/Keys.plist`
 
-A few resources to get you started if this is your first Flutter project:
+Contents of `assets/.env`:
+```
+GOOGLE_MAPS_API_KEY=<YOUR_GOOGLE_MAPS_API_KEY>
+```
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+Contents of `android/app/src/main/res/values/keys.xml`:
+```
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="GOOGLE_MAPS_API_KEY"><YOUR_GOOGLE_MAPS_API_KEY></string>
+</resources>
+```
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Contents of `ios/Runner/Keys.plist`:
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>GOOGLE_MAPS_API_KEY</key>
+	<string><YOUR_GOOGLE_MAPS_API_KEY></string>
+</dict>
+</plist>
+```
