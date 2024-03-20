@@ -100,6 +100,7 @@ getDistanceMatrix(LatLng location, intersections) async {
     var respPoints = jsonDecode(response.body);
     return respPoints['rows'][0]['elements'];
   } catch (e) {
+    // print(e);
     return [];
   }
 }

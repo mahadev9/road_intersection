@@ -34,6 +34,7 @@ class _MyAppState extends State<MyApp> {
   Map<String, LatLng> knownIntersections = {};
   Map<String, LatLng> nearestIntersections = {};
   Map<String, LatLng> visitedIntersections = {};
+  bool updatedNearestIntersections = false;
   late MapType _mapType;
 
   @override
@@ -49,6 +50,9 @@ class _MyAppState extends State<MyApp> {
   void dispose() {
     super.dispose();
     _positionStream.cancel();
+    knownIntersections.clear();
+    nearestIntersections.clear();
+    visitedIntersections.clear();
   }
 
   void getEnvVars() async {
@@ -94,29 +98,30 @@ class _MyAppState extends State<MyApp> {
 
     visitedIntersections.removeWhere((key, value) =>
         Geolocator.distanceBetween(value.latitude, value.longitude,
-            location.latitude, location.longitude) >=
+            location.latitude, location.longitude) >
         1000);
 
     bool anyIntersection = ni.entries.any((ki) =>
         Geolocator.distanceBetween(ki.value.latitude, ki.value.longitude,
-                location.latitude, location.longitude) <=
+                location.latitude, location.longitude) <
             500 &&
         !visitedIntersections.containsKey(ki.key));
 
     // bool anyIntersection = ni.values.any((ki) =>
     //     Geolocator.distanceBetween(ki.latitude, ki.longitude, location.latitude,
-    //             location.longitude) <=
+    //             location.longitude) <
     //         1000 &&
     //     !visitedIntersections.containsValue(ki));
 
     if (knownIntersections.isNotEmpty && !anyIntersection) {
+      updatedNearestIntersections = true;
       ni = Map.fromEntries(knownIntersections.entries
           .where((entry) =>
               Geolocator.distanceBetween(
                       entry.value.latitude,
                       entry.value.longitude,
                       location.latitude,
-                      location.longitude) <=
+                      location.longitude) <
                   1000 &&
               !visitedIntersections.containsKey(entry.key))
           .map((entry) => MapEntry(entry.key, entry.value)));
@@ -133,10 +138,12 @@ class _MyAppState extends State<MyApp> {
     }
 
     if (!_isLoading) {
-      if (iMap.isEmpty && ni.isNotEmpty) {
+      if ((iMap.isEmpty || updatedNearestIntersections) && ni.isNotEmpty) {
+        updatedNearestIntersections = false;
         iMap = (await intersectionsMap(_currentPosition, ni))!;
       }
       if (iMap.isNotEmpty) {
+        String viKey = '';
         iMap.forEach((key, value) {
           bool isOnPolyline = isLocationOnPath(
               location, value?['polyline'], true,
@@ -152,17 +159,21 @@ class _MyAppState extends State<MyApp> {
               color: Colors.lightBlue,
               points: value?['polyline'],
             ));
-            var visitedDistance = Geolocator.distanceBetween(
-                value?['location']!.latitude,
-                value?['location']!.longitude,
-                location.latitude,
-                location.longitude);
-            if (visitedDistance <= 25) {
-              visitedIntersections[key] = value?['location']!;
-              ni.removeWhere((k, v) => k == key);
-            }
+          }
+          var visitedDistance = Geolocator.distanceBetween(
+              value?['location']!.latitude,
+              value?['location']!.longitude,
+              location.latitude,
+              location.longitude);
+          if (visitedDistance < 25) {
+            viKey = key;
           }
         });
+        if (viKey != '' && viKey.isNotEmpty) {
+          visitedIntersections[viKey] = iMap[viKey]!['location'];
+          ni.remove(viKey);
+          iMap.remove(viKey);
+        }
       }
     }
     if (markers.isEmpty) {
