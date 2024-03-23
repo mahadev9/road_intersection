@@ -39,13 +39,13 @@ dependencies:
   http: ^1.2.0
   json_serializable: ^6.7.1
   json_annotation: ^4.8.1
-  geolocator: ^10.1.0
+  geolocator: ^11.0.0
   flutter_polyline_points: ^2.0.0
   flutter_dotenv: ^5.1.0
   vector_math: ^2.1.4
-  file_picker: ^6.1.1
+  file_picker: ^8.0.0+1
   fluttertoast: ^8.2.4
-  csv: ^5.1.1
+  csv: ^6.0.0
   permission_handler: ^11.3.0
   path_provider: ^2.1.2
 

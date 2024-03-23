@@ -263,15 +263,15 @@ class _MyAppState extends State<MyApp> {
                 icon: const Text('Save'),
                 tooltip: 'Save Location and Intersection Coordinates',
               ),
-              // IconButton(
-              //     onPressed: () {
-              //       setState(() {
-              //         _routes = {};
-              //         _markers = {};
-              //       });
-              //     },
-              //     icon: const Text('Clear'),
-              //     tooltip: 'Clear points and routes'),
+              IconButton(
+                  onPressed: () {
+                    setState(() {
+                      _routes = {};
+                      _markers = {};
+                    });
+                  },
+                  icon: const Text('Clear'),
+                  tooltip: 'Clear points and routes'),
             ],
           ),
           body: _isLoading
